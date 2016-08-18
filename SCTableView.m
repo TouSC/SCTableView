@@ -7,7 +7,6 @@
 //
 
 #import "SCTableView.h"
-#import "RootViewController.h"
 
 @implementation SCTableView
 {
@@ -19,7 +18,12 @@
 
 - (id)initWithFrame:(CGRect)frame NetBlock:(NetMethodBlock)netBlock;
 {
-    self = [super initWithFrame:frame];
+    return [self initWithFrame:frame NetBlock:netBlock Style:UITableViewStylePlain];
+}
+
+- (id)initWithFrame:(CGRect)frame NetBlock:(NetMethodBlock)netBlock Style:(UITableViewStyle)style;
+{
+    self = [super initWithFrame:frame style:style];
     if (self)
     {
         _isAutoLoadNeeded = YES;
@@ -30,9 +34,7 @@
         curServerTime = _followFirstStrValue? _followFirstStrValue:@"2000-01-01";
         self.delegate = self;
         self.dataSource = self;
-        self.tableFooterView = [[UIView alloc]init];
-        self.separatorColor = co_s_Color;
-        self.backgroundColor = we_s_Color;
+        self.tableFooterView = [UIView new];
     }
     return self;
 }
@@ -44,37 +46,7 @@
 
 - (void)silentRefresh;
 {
-    curPage = 1;
-    curServerTime = _followFirstStrValue? _followFirstStrValue:@"2000-01-01";
-    dispatch_async(dispatch_get_global_queue(0, 0), ^{
-        NSArray *basicArr;
-        NSDictionary *basicDic;
-        if (_keyForArr.length)
-        {
-            basicDic = _myNetBlock((int)curPage,curServerTime);
-            basicArr = [basicDic objectForKey:_keyForArr];
-        }
-        else
-        {
-            basicArr = _myNetBlock((int)curPage,curServerTime);
-        }
-        dispatch_async(dispatch_get_main_queue(), ^{
-            _contentDic = basicDic;
-            [_contentArr removeAllObjects];
-            if ([basicArr isKindOfClass:[NSArray class]])
-            {
-                [_contentArr addObjectsFromArray:basicArr];
-                [self reloadData];
-                
-                curPage = 1;
-                curServerTime = _followFirstStrValue? _followFirstStrValue:@"2000-01-01";
-            }
-            if ([_myDelegate respondsToSelector:@selector(tableView:didEndNetRequest:returnArr:)])
-            {
-                [_myDelegate tableView:self didEndNetRequest:_contentArr returnArr:basicArr];
-            }
-        });
-    });
+    [self headRefresh];
 }
 - (void)setIsRefreshNeeded:(BOOL)isRefreshNeeded;
 {
@@ -82,11 +54,7 @@
     if (isRefreshNeeded)
     {
         MJRefreshGifHeader *header = [MJRefreshGifHeader headerWithRefreshingTarget:self refreshingAction:@selector(headRefresh)];
-        
-        [header setTitle:@"下拉刷新" forState:MJRefreshStateIdle];
-        [header setTitle:@"松开刷新" forState:MJRefreshStatePulling];
-        [header setTitle:@"刷新中..." forState:MJRefreshStateRefreshing];
-        
+        header.lastUpdatedTimeLabel.hidden = YES;
         self.mj_header = header;
     }
     
@@ -181,7 +149,7 @@
                         }
                         else if([appendArr[0] isKindOfClass:[NSArray class]])
                         {
-                            NSArray* arr = [appendArr  firstObject];
+                            NSArray* arr = [appendArr firstObject];
                             if (arr.count)
                             {
                                 NSMutableArray *newContentArr = [[NSMutableArray alloc]init];
@@ -199,49 +167,27 @@
                             else
                             {
                                 curPage--;
-                                UILabel *endLabel = [[UILabel alloc]init];
-                                [self.superview addSubview:endLabel];
-                                [self.superview bringSubviewToFront:endLabel];
-                                endLabel.layer.backgroundColor = [UIColor darkGrayColor].CGColor;
-                                endLabel.layer.cornerRadius = 5*Scale;
-                                endLabel.textAlignment = NSTextAlignmentCenter;
-                                endLabel.text = _lastPageStr? _lastPageStr:@"最后一页";
-                                endLabel.textColor = [UIColor whiteColor];
-                                [endLabel mas_makeConstraints:^(MASConstraintMaker *make) {
-                                    make.bottom.equalTo(self.superview.mas_bottom).offset(-20);
-                                    make.centerX.equalTo(self.superview.mas_centerX);
-                                }];
-                                
-                                [UIView animateWithDuration:1 animations:^{
-                                    endLabel.alpha = 0;
-                                }completion:^(BOOL finished) {
-                                    [endLabel removeFromSuperview];
-                                }];
+                                MBProgressHUD *hud = [MBProgressHUD showHUDAddedTo:[[UIApplication sharedApplication].delegate window] animated:YES];
+                                hud.labelText = @"已无更多";
+                                hud.userInteractionEnabled = NO;
+                                hud.mode = MBProgressHUDModeText;
+                                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                                    [hud hide:YES];
+                                });
                             }
                         }
                         [self reloadData];
                     }
-                    else if([appendArr isKindOfClass:[NSArray class]] && appendArr.count == 0)
+                    else if([appendArr isKindOfClass:[NSArray class]] && appendArr.count==0)
                     {
                         curPage--;
-                        UILabel *endLabel = [[UILabel alloc]init];
-                        [self.superview addSubview:endLabel];
-                        [self.superview bringSubviewToFront:endLabel];
-                        endLabel.layer.backgroundColor = [UIColor darkGrayColor].CGColor;
-                        endLabel.layer.cornerRadius = 5*Scale;
-                        endLabel.textAlignment = NSTextAlignmentCenter;
-                        endLabel.text = _lastPageStr? _lastPageStr:@"最后一页";
-                        endLabel.textColor = [UIColor whiteColor];
-                        [endLabel mas_makeConstraints:^(MASConstraintMaker *make) {
-                            make.bottom.equalTo(self.superview.mas_bottom).offset(-20);
-                            make.centerX.equalTo(self.superview.mas_centerX);
-                        }];
-                        
-                        [UIView animateWithDuration:1 animations:^{
-                            endLabel.alpha = 0;
-                        }completion:^(BOOL finished) {
-                            [endLabel removeFromSuperview];
-                        }];
+                        MBProgressHUD *hud = [MBProgressHUD showHUDAddedTo:[[UIApplication sharedApplication].delegate window] animated:YES];
+                        hud.labelText = @"已无更多";
+                        hud.userInteractionEnabled = NO;
+                        hud.mode = MBProgressHUDModeText;
+                        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                            [hud hide:YES];
+                        });
                     }
                     if ([_myDelegate respondsToSelector:@selector(tableView:didEndNetRequest:returnArr:)])
                     {
@@ -266,7 +212,7 @@
 {
     if (_myDelegate&&[_myDelegate respondsToSelector:@selector(tableView:heightForRowAtIndexPath:)])
     {
-        return [_myDelegate tableView:tableView heightForRowAtIndexPath:indexPath];
+        return [_myDelegate tableView:self heightForRowAtIndexPath:indexPath];
     }
     else
     {
@@ -278,7 +224,7 @@
 {
     if (_myDelegate&&[_myDelegate respondsToSelector:@selector(numberOfSectionsInTableView:)])
     {
-        return [_myDelegate numberOfSectionsInTableView:tableView];
+        return [_myDelegate numberOfSectionsInTableView:self];
     }
     else
     {
@@ -296,7 +242,7 @@
     {
         if (_myDelegate&&[_myDelegate respondsToSelector:@selector(tableView:numberOfRowsInSection:)])
         {
-            return [_myDelegate tableView:tableView numberOfRowsInSection:section];
+            return [_myDelegate tableView:self numberOfRowsInSection:section];
         }
         else
         {
@@ -312,7 +258,7 @@
         [self footLoad];
         hasScrolled = NO;
     }
-    return [_myDelegate tableView:tableView cellForRowAtIndexPath:indexPath];
+    return [_myDelegate tableView:self cellForRowAtIndexPath:indexPath];
 }
 
 - (UITableViewCellEditingStyle)tableView:(UITableView *)tableView editingStyleForRowAtIndexPath:(NSIndexPath *)indexPath;
@@ -328,7 +274,7 @@
 {
     if (_myDelegate&&[_myDelegate respondsToSelector:@selector(tableView:commitEditingStyle:forRowAtIndexPath:)])
     {
-        [_myDelegate tableView:tableView commitEditingStyle:editingStyle forRowAtIndexPath:indexPath];
+        [_myDelegate tableView:self commitEditingStyle:editingStyle forRowAtIndexPath:indexPath];
     }
 }
 
@@ -336,21 +282,21 @@
 {
     if (_myDelegate&&[_myDelegate respondsToSelector:@selector(tableView:didSelectRowAtIndexPath:)])
     {
-        [_myDelegate tableView:tableView didSelectRowAtIndexPath:indexPath];
+        [_myDelegate tableView:self didSelectRowAtIndexPath:indexPath];
     }
 }
 - (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath
 {
     if (_myDelegate&&[_myDelegate respondsToSelector:@selector(tableView:canEditRowAtIndexPath:)])
     {
-        return  [_myDelegate tableView:tableView canEditRowAtIndexPath:indexPath];
+        return  [_myDelegate tableView:self canEditRowAtIndexPath:indexPath];
     }
     return NO;
 }
 - (UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section
 {
     if (_myDelegate && [_myDelegate respondsToSelector:@selector(tableView:viewForHeaderInSection:)]) {
-        return [_myDelegate tableView:tableView viewForHeaderInSection:section];
+        return [_myDelegate tableView:self viewForHeaderInSection:section];
     }
     else
     {
@@ -360,7 +306,7 @@
 - (UIView *)tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section
 {
     if (_myDelegate && [_myDelegate respondsToSelector:@selector(tableView:viewForFooterInSection:)]) {
-        return [_myDelegate tableView:tableView viewForFooterInSection:section];
+        return [_myDelegate tableView:self viewForFooterInSection:section];
     }
     else
     {
@@ -370,7 +316,7 @@
 - (CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section
 {
     if (_myDelegate && [_myDelegate respondsToSelector:@selector(tableView:heightForHeaderInSection:)]) {
-        return [_myDelegate tableView:tableView heightForHeaderInSection:section];
+        return [_myDelegate tableView:self heightForHeaderInSection:section];
     }
     else
     {
@@ -380,7 +326,7 @@
 - (CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section
 {
     if (_myDelegate && [_myDelegate respondsToSelector:@selector(tableView:heightForFooterInSection:)]) {
-        return [_myDelegate tableView:tableView heightForFooterInSection:section];
+        return [_myDelegate tableView:self heightForFooterInSection:section];
     }
     else
     {
@@ -390,7 +336,7 @@
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section;
 {
     if (_myDelegate && [_myDelegate respondsToSelector:@selector(tableView:titleForHeaderInSection:)]) {
-        return [_myDelegate tableView:tableView titleForHeaderInSection:section];
+        return [_myDelegate tableView:self titleForHeaderInSection:section];
     }
     else
     {
@@ -402,7 +348,7 @@
 {
     if ([_myDelegate respondsToSelector:@selector(tableView:titleForDeleteConfirmationButtonForRowAtIndexPath:)])
     {
-        return [_myDelegate tableView:tableView titleForDeleteConfirmationButtonForRowAtIndexPath:indexPath];
+        return [_myDelegate tableView:self titleForDeleteConfirmationButtonForRowAtIndexPath:indexPath];
     }
     return nil;
 }

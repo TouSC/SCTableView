@@ -7,32 +7,33 @@
 //
 
 #import <UIKit/UIKit.h>
-#import "Header.h"
 #import <MJRefresh/MJRefresh.h>
 #import "SCNetMethod.h"
 #import <Masonry.h>
+#import <MBProgressHUD.h>
+@class SCTableView;
 
 typedef id(^NetMethodBlock)(int curPage,NSString *serTime);
 
 @protocol SCTableViewDelegate <NSObject>
 @required
-- (UITableViewCell *)tableView:(id)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath;
+- (UITableViewCell *)tableView:(SCTableView*)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath;
 @optional
-- (NSString *)tableView:(UITableView *)tableView titleForDeleteConfirmationButtonForRowAtIndexPath:(NSIndexPath *)indexPath;
+- (NSString *)tableView:(SCTableView *)tableView titleForDeleteConfirmationButtonForRowAtIndexPath:(NSIndexPath *)indexPath;
 - (UITableViewCellEditingStyle)setTableEditingStyle:(NSIndexPath*)indexPath;
 - (void)editCell:(NSIndexPath*)indexPath;
-- (void)tableView:(id)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath;
-- (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath;
-- (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath;
-- (UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section;
-- (UIView *)tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section;
-- (CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section;
-- (CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section;
-- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath;
-- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView;
-- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section;
-- (void)tableView:(UITableView *)tableView didEndNetRequest:(NSArray* )contentArr returnArr:(NSArray* )basicArr;
-- (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section;
+- (void)tableView:(SCTableView*)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath;
+- (void)tableView:(SCTableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath;
+- (BOOL)tableView:(SCTableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath;
+- (UIView *)tableView:(SCTableView *)tableView viewForHeaderInSection:(NSInteger)section;
+- (UIView *)tableView:(SCTableView *)tableView viewForFooterInSection:(NSInteger)section;
+- (CGFloat)tableView:(SCTableView *)tableView heightForHeaderInSection:(NSInteger)section;
+- (CGFloat)tableView:(SCTableView *)tableView heightForFooterInSection:(NSInteger)section;
+- (CGFloat)tableView:(SCTableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath;
+- (NSInteger)numberOfSectionsInTableView:(SCTableView *)tableView;
+- (NSInteger)tableView:(SCTableView *)tableView numberOfRowsInSection:(NSInteger)section;
+- (void)tableView:(SCTableView *)tableView didEndNetRequest:(NSArray* )contentArr returnArr:(NSArray* )basicArr;
+- (NSString *)tableView:(SCTableView *)tableView titleForHeaderInSection:(NSInteger)section;
 - (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView;
 -(void)scrollViewDidScroll:(UIScrollView *)scrollView;
 @end
@@ -54,9 +55,8 @@ typedef id(^NetMethodBlock)(int curPage,NSString *serTime);
 //如果获取回来是数组用它来获取数组:
 @property(nonatomic,strong)NSMutableArray *contentArr;
 
-@property(nonatomic,copy)NSString* lastPageStr;//最后一页的提示语
-
 - (id)initWithFrame:(CGRect)frame NetBlock:(NetMethodBlock)netBlock;
+- (id)initWithFrame:(CGRect)frame NetBlock:(NetMethodBlock)netBlock Style:(UITableViewStyle)style;
 - (void)refresh;//下拉刷新
 - (void)silentRefresh;//静默刷新
 
